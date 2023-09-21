@@ -7,16 +7,18 @@
     tools:context=".MainActivity">
 
     <TextView
-    android:id="@+id/txtTitulo"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    android:background="#FFEB3B"
-    android:text="Lugares UTEQ"
-    android:textAlignment="center"
-    android:textSize="20sp"
-    android:textStyle="bold"
-    app:layout_constraintTop_toTopOf="parent" />
+        android:id="@+id/txtTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="#FFEB3B"
+        android:text="Lugares UTEQ"
+        android:textAlignment="center"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="10dp" />
 
 
 

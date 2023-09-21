@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -51,6 +52,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -65,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
     ArrayList<String> permisosNoAprobados;
     Button btnCamara;
     TextView txtResults;
+    TextToSpeech tts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         permisos_requeridos.add(Manifest.permission.CAMERA);
         permisos_requeridos.add(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         permisos_requeridos.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        Estado = true;
 
         //mImageView= findViewById(R.id.image_view);
         txtResults = findViewById(R.id.txtresults);
@@ -82,6 +86,36 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         permisosNoAprobados  = getPermisosNoAprobados(permisos_requeridos);
         requestPermissions(permisosNoAprobados.toArray(new String[permisosNoAprobados.size()]),
                 100);
+        //crear el tts
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status==TextToSpeech.SUCCESS)
+                {
+                    tts.setLanguage(new Locale("es", "ES"));
+                    tts.setSpeechRate(1.0f);
+
+                    //Monitorear el progreso de síntesis de habla
+                    tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        @Override
+                        public void onStart(String utteranceId) {
+                            Estado = false;
+                        }
+
+                        @Override
+                        public void onDone(String utteranceId) {
+                            Estado = true;
+                        }
+
+                        @Override
+                        public void onError(String utteranceId) {
+                            Estado = false;
+
+                        }
+                    });
+                }
+            }
+        });
     }
 
     public void abrirCamera (View view){
@@ -327,31 +361,10 @@ protected void setFragment() {
         Log.i("error imagen", "processImage: "+e.getMessage());
     }
     postInferenceCallback.run();
-
-
-    /*
-    try {
-        Modelomascota model = Modelomascota.newInstance(getApplicationContext());
-        TensorImage image = TensorImage.fromBitmap(rgbFrameBitmap);
-
-        Modelomascota.Outputs outputs = model.process(image);
-        List<Category> probability = outputs.getProbabilityAsCategoryList();
-        Collections.sort(probability, new CategoryComparator());
-        String res="";
-        for (int i = 0; i < probability.size(); i++) 
-            res = res + probability.get(i).getLabel() +  " " +  probability.get(i).getScore()*100 + " % \n";
-       
-        txtResults.setText(res);
-        model.close();
-    } catch (IOException e) {
-        txtResults.setText("Error al procesar Modelo");
-    }
-    */
-
 }
     //modelo
     int imageSize = 224;
-    TextToSpeech tts;
+    Boolean Estado ;
 
     public void classifyImage(Bitmap image){
     try {
@@ -395,10 +408,31 @@ protected void setFragment() {
                 maxPos = i;
             }
         }
+        /*
         final String[] classes = {"Auditorio", "Biblioteca", "Centro Medico", "Comedor 2","Departamento Academico",
                 "Departamento de Archivos","Departamento de Investigacion","Facultad Ciencias de la Salud","Facultad Ciencias Empresariales","Facultad de Ciencias Pedagogicas","Instituto de informatica",
                 "Parqueadero  Estudiantes","Parqueadero Administrativo","Parqueadero autoridades","Polideportivo","Rectorado","Rotonda"};
         //txtResults.setText("aqui deberia salir la clase");
+*/
+
+        final String [] classes = {"Polideportivo",
+                "Facultad de ciencias empresariales",
+                "Facultad de ciencias sociales, económicas y financieras",
+                "Comedor",
+                "Parqueadero",
+                "Facultad de ciencias de la salud",
+                "Rectorado",
+                "Departamento de archivos",
+                "Facultad de ciencias de pedagogía",
+                "Departamento médico",
+                "Departamento de investigación",
+                "Biblioteca",
+                "Bar",
+                "Departamento Academico",
+                "Auditorio",
+                "Departamento de informática", "Rotonda"};
+
+
         String resultado = classes[maxPos];
         //txtResults.setText(classes[maxPos]);
         runOnUiThread(new Runnable() {
@@ -408,17 +442,16 @@ protected void setFragment() {
             }
         });
         //invocar el text to speech
-        tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status==TextToSpeech.SUCCESS)
-                {
-                    tts.setLanguage(new Locale("es", "ES"));
-                    tts.setSpeechRate(1.0f);
-                    tts.speak(resultado, TextToSpeech.QUEUE_ADD, null);
-                }
+        if (Estado ){
+            if (tts != null) {
+                String utteranceId = "FraseUnica";
+                HashMap<String, String> params = new HashMap<>();
+                params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+                //if(resultado!=classes[maxPos])
+                tts.speak(resultado , TextToSpeech.QUEUE_FLUSH, params);
+                Log.d("AQUi", resultado);
             }
-        });
+        }
         // Releases model resources if no longer used.
         model.close();
     } catch (Exception e) {
